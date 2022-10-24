@@ -1,4 +1,4 @@
-import { verifyAccountAPI, regAccountAPI, loginAPI } from "./API.js";
+import { verifyAccountAPI, regAccountAPI } from "./API.js";
 
 const loginId = document.querySelector("#txtLoginId");
 const nickname = document.querySelector("#txtNickname");
@@ -68,7 +68,6 @@ async function handleForm(e) {
       nickname: nickname,
       loginPwd: loginPwd,
     });
-    console.log(data);
     if (data) {
       alert("注册成功");
       location.href = "../html/login.html";
