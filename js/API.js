@@ -1,16 +1,9 @@
 const DOMAIN_NAME = "https://study.duyiedu.com";
 const TOKEN = "token";
-const headers = {
-  "Content-Type": "application/json",
-};
 
 //验证账号
 export async function verifyAccountAPI(name) {
-  const resp = await fetch(`${DOMAIN_NAME}/api/user/exists?loginId=${name}`, {
-    method: "GET",
-  });
-  const data = await resp.json();
-  return data.data;
+  return await hadnleRequest("GET", `/api/user/exists?loginId=${name}`);
 }
 
 /**
@@ -18,67 +11,57 @@ export async function verifyAccountAPI(name) {
  * @param {*} regObj 账号信息
  */
 export async function regAccountAPI(regObj) {
-  const resp = await fetch(`${DOMAIN_NAME}/api/user/reg`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(regObj),
-  });
-  const data = await resp.json();
-  return data.data;
+  return await hadnleRequest("post", "/api/user/reg", regObj);
 }
 
 //登录
 export async function loginAPI(loginObj) {
-  const resp = await fetch(`${DOMAIN_NAME}/api/user/login`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(loginObj),
-  });
-  const data = await resp.json();
-  if (data.code === 0) {
-    localStorage.setItem(TOKEN, resp.headers.get("Authorization"));
-  }
-  return data;
+  return await hadnleRequest("post", "/api/user/login", loginObj);
 }
 
 //用户信息
 export async function userInfoAPI() {
-  const resp = await fetch(`${DOMAIN_NAME}/api/user/profile`, {
-    method: "GET",
-    headers: {
-      authorization: `Bearer ${localStorage.getItem(TOKEN)}`,
-    },
-  });
-  const data = await resp.json();
-  return data;
+  return await hadnleRequest("get", "/api/user/profile");
 }
 
 //获取聊天信息
 export async function getMessageAPI() {
-  const resp = await fetch(`${DOMAIN_NAME}/api/chat/history`, {
-    method: "GET",
-    headers: {
-      authorization: `Bearer ${localStorage.getItem(TOKEN)}`,
-    },
-  });
-  const data = await resp.json();
-  return data.data;
+  return await hadnleRequest("get", "/api/chat/history");
 }
 
 //发送聊天信息
 export async function postMessageAPI(content) {
-  headers.authorization = `Bearer ${localStorage.getItem(TOKEN)}`;
-  const resp = await fetch(`${DOMAIN_NAME}/api/chat`, {
-    method: "post",
-    headers,
-    body: JSON.stringify(content),
-  });
-  const data = await resp.json();
-  return data;
+  return await hadnleRequest("post", "/api/chat", content);
 }
 
 //退出登录
 export function exitLoginAPI() {
   localStorage.removeItem(TOKEN);
   location.href = "../html/login.html";
+}
+
+/**
+ *
+ * @param {*} method 请求方法
+ * @param {*} path 请求路径
+ * @param {*} content 请求内容
+ */
+async function hadnleRequest(method, path, content) {
+  const token = localStorage.getItem(TOKEN);
+  const headers = { "Content-Type": "application/json" };
+  if (token) {
+    headers.authorization = `Bearer ${token}`;
+  }
+  const resp = await fetch(DOMAIN_NAME + path, {
+    method,
+    headers,
+    body: JSON.stringify(content),
+  });
+  const data = await resp.json();
+  //如果响应有token则保存token
+  const auth = resp.headers.get("Authorization");
+  if (data.code === 0 && auth) {
+    localStorage.setItem(TOKEN, auth);
+  }
+  return data;
 }

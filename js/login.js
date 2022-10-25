@@ -1,30 +1,25 @@
 import { loginAPI } from "./API.js";
-const loginId = document.querySelector("#txtLoginId");
-const loginPwd = document.querySelector("#txtLoginPwd");
-const userFrom = document.querySelector(".user-form");
-
-function handleInfo(value, err) {
-  if (!value) {
-    err.innerText = "账号不能为空";
-    return true;
-  } else {
-    err.innerText = "";
-  }
-}
+import { $, handleErrHint } from "../utils/tool.js";
+const loginId = $("#txtLoginId");
+const loginPwd = $("#txtLoginPwd");
+const userFrom = $(".user-form");
 
 //登录
 async function handleLogin(e) {
   e.preventDefault();
-  const err = loginId.nextElementSibling;
-  const errPwd = loginPwd.nextElementSibling;
 
-  if (handleInfo(loginId.value, err) || handleInfo(loginPwd.value, errPwd))
+  if (
+    handleErrHint(!loginId.value, loginId.nextElementSibling, "账号不能为空") ||
+    handleErrHint(!loginPwd.value, loginPwd.nextElementSibling, "密码不能为空")
+  )
     return;
+  //登录请求
   const data = await loginAPI({
     loginId: loginId.value,
     loginPwd: loginPwd.value,
   });
   if (data.code === 400) {
+    //账号或密码错误
     err.innerText = data.msg;
     return;
   }

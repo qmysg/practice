@@ -1,58 +1,42 @@
 import { verifyAccountAPI, regAccountAPI } from "./API.js";
+import { $, handleErrHint } from "../utils/tool.js";
 
-const loginId = document.querySelector("#txtLoginId");
-const nickname = document.querySelector("#txtNickname");
-const loginPwd = document.querySelector("#txtLoginPwd");
-const verifyPwd = document.querySelector("#txtLoginPwdConfirm");
-const userFrom = document.querySelector(".user-form");
+const loginId = $("#txtLoginId");
+const nickname = $("#txtNickname");
+const loginPwd = $("#txtLoginPwd");
+const verifyPwd = $("#txtLoginPwdConfirm");
+const userFrom = $(".user-form");
 
 //处理账号验证
 async function handleVerifyAccount() {
   const err = loginId.nextElementSibling;
-  if (!loginId.value) {
-    //账号不能为空
-    err.innerText = "账号不能为空";
-  }
+  const result = handleErrHint(!loginId.value, err, "账号不能为空");
+  if (!result) return;
+
   const data = await verifyAccountAPI(loginId.value);
-  if (data) {
-    err.innerText = "该账号已被占用";
-  } else {
-    err.innerText = "";
-    return loginId.value;
-  }
+  return handleErrHint(data.data, err, "该账号已被占用");
 }
 
 //处理昵称
 function handleNickname() {
   const err = nickname.nextElementSibling;
-  if (!nickname.value) {
-    err.innerText = "昵称不能为空";
-  } else {
-    err.innerText = "";
-    return nickname.value;
-  }
+  return handleErrHint(!nickname.value, err, "昵称不能为空");
 }
 
 //处理密码
 function handlePwd() {
   const err = loginPwd.nextElementSibling;
-  if (!loginPwd.value) {
-    err.innerText = "密码不能为空";
-  } else {
-    err.innerText = "";
-    return loginPwd.value;
-  }
+  return handleErrHint(!loginPwd.value, err, "密码不能为空");
 }
 
 //确认密码
 function handleVerifyPwd() {
   const err = verifyPwd.nextElementSibling;
-  if (verifyPwd.value != loginPwd.value) {
-    err.innerText = "两次密码不一致";
-  } else {
-    err.innerText = "";
-    return true;
-  }
+  return handleErrHint(
+    verifyPwd.value != loginPwd.value,
+    err,
+    "两次密码不一致"
+  );
 }
 //总验证
 async function handleForm(e) {

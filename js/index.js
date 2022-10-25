@@ -4,13 +4,14 @@ import {
   postMessageAPI,
   exitLoginAPI,
 } from "./API.js";
+import { $ } from "../utils/tool.js";
 
-const nickname = document.querySelector("#nickname");
-const loginId = document.querySelector("#loginId");
-const chatContainer = document.querySelector(".chat-container");
-const form = document.querySelector(".msg-container");
-const inp = document.querySelector("#txtMsg");
-const close = document.querySelector(".close");
+const nickname = $("#nickname");
+const loginId = $("#loginId");
+const chatContainer = $(".chat-container");
+const form = $(".msg-container");
+const inp = $("#txtMsg");
+const close = $(".close");
 
 /**
  * 将时间戳转换
@@ -63,6 +64,7 @@ function scrollBottom() {
 }
 
 (async () => {
+  //一开始就要确认是否登录过
   const info = await userInfoAPI();
   if (info.code === 401) {
     alert("未登录或登录已过期，请重新登录");
@@ -72,13 +74,17 @@ function scrollBottom() {
   nickname.innerText = info.data.nickname;
   loginId.innerText = info.data.loginId;
   //获取历史聊天记录
-  const chatMeg = await getMessageAPI();
+  const { data: chatMeg } = await getMessageAPI();
   let html = "";
+  console.time();
+
   for (let i = 0; i < chatMeg.length; i++) {
+    //将所有信息处理并显示
     const div = document.createElement("div");
     div.appendChild(chatFormat(chatMeg[i]));
     html += div.innerHTML;
   }
+  console.timeEnd();
   chatContainer.innerHTML = html;
   scrollBottom();
 })();
@@ -87,6 +93,7 @@ function scrollBottom() {
 //发送消息
 form.addEventListener("submit", async function (e) {
   e.preventDefault();
+  //消息不能为空
   const val = inp.value;
   if (!val) {
     return;
@@ -104,6 +111,7 @@ form.addEventListener("submit", async function (e) {
 
   const data = await postMessageAPI({ content: val });
   if (data.code == 0) {
+    //显示回应的消息
     const html = chatFormat(data.data);
     chatContainer.appendChild(html);
     scrollBottom();
