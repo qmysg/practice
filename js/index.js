@@ -76,15 +76,12 @@ function scrollBottom() {
   //获取历史聊天记录
   const { data: chatMeg } = await getMessageAPI();
   let html = "";
-  console.time();
-
   for (let i = 0; i < chatMeg.length; i++) {
     //将所有信息处理并显示
     const div = document.createElement("div");
     div.appendChild(chatFormat(chatMeg[i]));
     html += div.innerHTML;
   }
-  console.timeEnd();
   chatContainer.innerHTML = html;
   scrollBottom();
 })();
