@@ -1,6 +1,7 @@
 import { ref, computed } from "vue";
+import * as todoAPI from "../api/todo";
 
-export default function useEditTodo(todoListRef) {
+export default function useEditTodo(fetchData, todoRef) {
   const editTodoRef = ref(null); //要编辑的todo
   let cacheEditTitle = null; //缓存要编辑的内容
   //编辑
@@ -9,14 +10,16 @@ export default function useEditTodo(todoListRef) {
     cacheEditTitle = todo.title;
   };
   //保存编辑
-  const doneEdit = (todo) => {
+  const doneEdit = async (todo) => {
     editTodoRef.value = null;
     const title = todo.title.trim();
     if (title) {
       todo.title = title;
     } else {
       //无内容，删除
-      todoListRef.value.splice(todoListRef.value.indexOf(todo.id), 1);
+      await todoAPI.deleteTodo(todo.id);
+      //重新请求数据
+      await fetchData();
     }
   };
   //取消编辑
@@ -27,15 +30,23 @@ export default function useEditTodo(todoListRef) {
   //全选或全不选
   const checkTodoRef = computed({
     get() {},
-    set(checked) {
-      todoListRef.value.forEach((todo) => (todo.completed = checked));
+    async set(checked) {
+      const { data } = await todoAPI.updateTodoState(checked);
+      todoRef.value = data;
     },
   });
+
+  //处理选中的todo
+  const handleActive = async function (todo) {
+    todo.completed = !todo.completed;
+    await todoAPI.updateTodo(todo);
+  };
   return {
-    editTodoRef,
     editTodo,
     doneEdit,
     cancelEdit,
+    editTodoRef,
+    handleActive,
     checkTodoRef,
   };
 }

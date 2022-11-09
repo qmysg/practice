@@ -1,6 +1,5 @@
 <template>
   <link rel="stylesheet" href="./index.css" />
-
   <div id="app">
     <section class="todoapp">
       <header class="header">
@@ -10,8 +9,9 @@
           autofocus=""
           autocomplete="off"
           placeholder="What needs to be done?"
-          v-model="newTodoRef"
-          @keyup.enter="addTodo"
+          v-model="newTodo"
+          ref="inputs"
+          @keyup.enter="handleTodoAdd"
         />
       </header>
       <section class="main">
@@ -25,7 +25,7 @@
         <ul class="todo-list">
           <li
             class="todo"
-            v-for="todo in filterTodoListRef"
+            v-for="todo in todoRef"
             :key="todo.id"
             :class="{
               completed: todo.completed,
@@ -33,9 +33,18 @@
             }"
           >
             <div class="view">
-              <input class="toggle" type="checkbox" v-model="todo.completed" />
+              <input
+                class="toggle"
+                type="checkbox"
+                :checked="todo.completed"
+                :value="todo.completed"
+                @input="handleActive(todo)"
+              />
               <label @dblclick="editTodo(todo)">{{ todo.title }}</label>
-              <button class="destroy" @click="remove(todo)"></button>
+              <button
+                class="destroy"
+                @click="handleTodoDelete(todo.id)"
+              ></button>
             </div>
             <input
               class="edit"
@@ -72,11 +81,7 @@
             >
           </li>
         </ul>
-        <button
-          class="clear-completed"
-          v-show="accomplishTodo > 0"
-          @click="removeCompleted"
-        >
+        <button class="clear-completed" @click="removeCompleted">
           Clear completed
         </button>
       </footer>
@@ -85,19 +90,46 @@
 </template>
 
 <script>
-import useTodoList from "./components/useTodoList";
 import useNewTodo from "./components/useNewTodo";
 import useFilterTodo from "./components/useFilterTodo";
 import useRemoveTodo from "./components/useRemoveTodo";
 import useEditTodo from "./components/useEditTodo";
+import * as todoStorage from "./utils/todoStorage";
+import * as todoAPI from "./api/todo";
+import { ref, watchEffect, computed } from "vue";
 export default {
   setup() {
-    const { todoRef } = useTodoList();
+    const todoRef = ref([]);
+    const visibilityRef = ref("all");
+
+    //获取todos
+    async function fetchData() {
+      useFilterTodo(visibilityRef);
+      const result = await todoAPI.fetchTodo(visibilityRef.value);
+      todoRef.value = result;
+    }
+    fetchData();
+    watchEffect(async () => {
+      const result = await todoAPI.fetchTodo(visibilityRef.value);
+      todoRef.value = result;
+    });
+
+    //未完成的任务数量
+    const unfinishedTodo = computed(() => {
+      return todoStorage.filter(todoRef.value, "active").length;
+    });
+
+    const { handleTodoAdd, newTodo } = useNewTodo(todoRef);
+    const { handleTodoDelete, removeCompleted } = useRemoveTodo(fetchData);
     return {
-      ...useNewTodo(todoRef),
-      ...useFilterTodo(todoRef),
-      ...useRemoveTodo(todoRef),
-      ...useEditTodo(todoRef),
+      todoRef,
+      visibilityRef,
+      handleTodoAdd,
+      ...useEditTodo(fetchData, todoRef),
+      handleTodoDelete,
+      newTodo,
+      removeCompleted,
+      unfinishedTodo,
     };
   },
 };

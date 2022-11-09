@@ -1,13 +1,18 @@
-export default function useRemoveTodo(todoListRef) {
-  const remove = (todo) => {
-    todoListRef.value.splice(todoListRef.value.indexOf(todo.id), 1);
+import * as todoAPI from "../api/todo";
+
+//删除todo
+export default function useRemoveTodo(fetchData) {
+  const handleTodoDelete = async (id) => {
+    await todoAPI.deleteTodo(id);
+    fetchData();
   };
   //删除所有已完成的
-  const removeCompleted = () => {
-    todoListRef.value = todoListRef.value.filter((todo) => !todo.completed);
+  const removeCompleted = async () => {
+    await todoAPI.deleteTodo();
+    fetchData();
   };
   return {
-    remove,
+    handleTodoDelete,
     removeCompleted,
   };
 }
