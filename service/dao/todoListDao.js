@@ -33,7 +33,7 @@ module.exports.updateTodoDao = async function (id, body) {
   });
   const data = await todoListModel.findByPk(id);
   if (data && data.dataValues) {
-    return dataValues;
+    return data.dataValues;
   }
   return "没有该便签的信息";
 };
