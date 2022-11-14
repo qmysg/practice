@@ -10,17 +10,21 @@ class SnakeBody extends Rectangle {
     const dom = document.createElement("div");
     super(slicingWidth, slicingHeight, left, top, dom);
     this.orientations = "right"; //蛇移动的方向
-    this._index = null;
+    this._index = null; //SnakeBody类在Snake类数组中的下标
     this.times = null;
     this.dom = dom;
     this.dom.style.borderRadius = "50%";
     this.dom.style.backgroundColor = "#36d749";
+    this.dom.style.position = "absolute";
     this.render();
   }
 
+  /**
+   * @param {{ type: any; index: number; snakeBodyArr: SnakeBody[]; }} obj
+   */
   set orientations(obj) {
     const oldType = this._orientation;
-    this._orientation = obj.type ? obj.type : obj;
+    this._orientation = obj.type ? obj.type : obj; //一开始obj.type没有值，将this.orientations的值传入
     this._index = obj.index;
     if (this._index) {
       comeAboutHandle(
@@ -58,20 +62,26 @@ class Snake extends Rectangle {
     this.dom = dom;
     this.dom.style.background = `url(${img}) no-repeat center`;
     this.dom.style.backgroundSize = slicingWidth + "px";
+    this.dom.style.position = "absolute";
     snakeContainer.appendChild(this.dom);
     //生成初始的身体
     for (let i = 0; i < 3; i++) {
-      const snakeBody = new SnakeBody(70 - 20 - i * 20, 0);
+      const snakeBody = new SnakeBody(
+        left - slicingWidth - i * slicingWidth,
+        top
+      );
       this.snakeBodyArr.push(snakeBody);
       snakeContainer.appendChild(snakeBody.dom);
     }
     this.render();
   }
 
+  /**
+   * @param {any} type
+   */
   set orientation(type) {
     const oldType = this._orientation;
     this._orientation = type;
-    //蛇头改变方向后
     comeAboutHandle(
       this.times,
       this.dom,
@@ -95,9 +105,9 @@ class Snake extends Rectangle {
   //改变移动方向
   comeAbout(type) {
     if (type === this._orientation) return;
-    const old = this._orientation; //方向不能相反
+    const old = this._orientation; //原来的方向
 
-    //改变蛇头朝向
+    //改变蛇头朝向，方向不能相反
     if (type === "left" && old !== "right") {
       this.dom.style.transform = "rotate(180deg)";
     } else if (type === "right" && old !== "left") {
@@ -106,7 +116,7 @@ class Snake extends Rectangle {
       this.dom.style.transform = "rotate(270deg)";
     } else if (type === "bottom" && old !== "top") {
       this.dom.style.transform = "rotate(90deg)";
-    }
+    } else return;
     this.orientation = type;
   }
 
@@ -174,6 +184,7 @@ function comeAboutHandle(times, dom, oldType, nowType, snakeBodyArr, index) {
   times = setInterval(() => {
     const nowLeft = +snakeBody.dom.style.left.replace("px", "");
     const nowTop = +snakeBody.dom.style.top.replace("px", "");
+    //当蛇后一节的身体坐标到达蛇前一节身体的坐标时，可以转向了
     if (
       (oldType === "right" && nowLeft >= left) ||
       (oldType === "left" && nowLeft <= left) ||

@@ -17,10 +17,10 @@ class Rectangle {
     this.top = top;
     this.dom = dom;
   }
+  //重新渲染dom
   render() {
     this.dom.style.width = this.width + "px";
     this.dom.style.height = this.height + "px";
-    this.dom.style.position = "absolute";
     this.dom.style.left = this.left + "px";
     this.dom.style.top = this.top + "px";
   }

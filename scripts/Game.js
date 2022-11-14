@@ -60,7 +60,6 @@ class Game {
       Math.abs(rect1Left - rect2Left) < widthSum &&
       Math.abs(rect1Top - rect2Top) < heightSum
     ) {
-      console.log(rect1, rect2);
       return true;
     }
     return false;
@@ -111,7 +110,6 @@ class Game {
       function moveSnake(e) {
         if (this.gameOver) return;
         const key = e[0];
-        console.log(key);
         //按下空格暂停游戏
         if (key == " ") {
           this.stop();
