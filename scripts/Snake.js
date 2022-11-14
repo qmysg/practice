@@ -1,21 +1,17 @@
-const mapDom = document.querySelector(".container");
-const mapWidth = mapDom.getBoundingClientRect().width;
-const mapHeight = mapDom.getBoundingClientRect().height;
+import { mapDom, slicingWidth, slicingHeight } from "./map.js";
 
-const slicing = 30; //将地图分成几份
-
-const snakeWidth = mapWidth / slicing;
-const snakeHeight = mapHeight / slicing;
-
+const snakeContainer = document.createElement("div");
+mapDom.appendChild(snakeContainer);
 /**
  * 生成蛇的一节身体
  */
 class SnakeBody extends Rectangle {
   constructor(left, top) {
     const dom = document.createElement("div");
-    super(snakeWidth, snakeHeight, left, top, dom);
+    super(slicingWidth, slicingHeight, left, top, dom);
     this.orientations = "right"; //蛇移动的方向
     this._index = null;
+    this.times = null;
     this.dom = dom;
     this.dom.style.borderRadius = "50%";
     this.dom.style.backgroundColor = "#36d749";
@@ -23,8 +19,20 @@ class SnakeBody extends Rectangle {
   }
 
   set orientations(obj) {
+    const oldType = this._orientation;
     this._orientation = obj.type ? obj.type : obj;
     this._index = obj.index;
+    if (this._index) {
+      comeAboutHandle(
+        this.times,
+        this.dom,
+        oldType,
+        this._orientation,
+        obj.snakeBodyArr,
+        this._index
+      );
+      this.times = null;
+    }
   }
   //移动
   move(distance) {
@@ -36,21 +44,26 @@ class SnakeBody extends Rectangle {
  * 生成蛇
  */
 class Snake extends Rectangle {
-  constructor(img, left, top) {
+  constructor(img) {
     const dom = document.createElement("div");
-    super(snakeWidth, snakeHeight, left, top, dom);
+    const left = 70;
+    const top = 0;
+    super(slicingWidth, slicingHeight, left, top, dom);
+    this.left = left;
+    this.top = top;
     this.snakeBodyArr = []; //放置蛇身类的数组
     this.orientation = "right"; //蛇移动的方向
+    this.speed = 10; //蛇的移动速度
     this.times = null;
     this.dom = dom;
     this.dom.style.background = `url(${img}) no-repeat center`;
-    this.dom.style.backgroundSize = snakeWidth + "px";
-    mapDom.appendChild(this.dom);
+    this.dom.style.backgroundSize = slicingWidth + "px";
+    snakeContainer.appendChild(this.dom);
     //生成初始的身体
     for (let i = 0; i < 3; i++) {
-      const snakeBody = new SnakeBody(left - 20 - i * 20, 0);
+      const snakeBody = new SnakeBody(70 - 20 - i * 20, 0);
       this.snakeBodyArr.push(snakeBody);
-      mapDom.appendChild(snakeBody.dom);
+      snakeContainer.appendChild(snakeBody.dom);
     }
     this.render();
   }
@@ -59,59 +72,124 @@ class Snake extends Rectangle {
     const oldType = this._orientation;
     this._orientation = type;
     //蛇头改变方向后
-
-    if (this.times) return;
-    const left = this.dom.style.left.replace("px", "");
-    const top = this.dom.style.top.replace("px", "");
-    const snakeBody = this.snakeBodyArr[0];
-    if (!snakeBody) return; //一开始数组内还未有数据
-    this.times = setInterval(() => {
-      if (
-        (oldType === "right" &&
-          snakeBody.dom.style.left.replace("px", "") >= left) ||
-        (oldType === "left" &&
-          snakeBody.dom.style.left.replace("px", "") <= left) ||
-        (oldType === "top" &&
-          snakeBody.dom.style.left.replace("px", "") <= top) ||
-        (oldType === "bottom" &&
-          snakeBody.dom.style.left.replace("px", "") >= top)
-      ) {
-        //改变蛇身朝向
-        snakeBody.orientations = { type: this._orientation, index: 1 };
-        clearInterval(this.times);
-      }
-    }, 10);
+    comeAboutHandle(
+      this.times,
+      this.dom,
+      oldType,
+      this._orientation,
+      this.snakeBodyArr,
+      0
+    );
   }
 
-  //移动蛇
-  move(distance) {
-    super.move(distance, this._orientation);
+  /**
+   * 蛇开始移动
+   */
+  move() {
+    super.move(this.speed, this._orientation);
     for (const cls of this.snakeBodyArr) {
-      cls.move(distance);
+      cls.move(this.speed);
     }
   }
 
   //改变移动方向
   comeAbout(type) {
-    this.orientation = type;
+    if (type === this._orientation) return;
+    const old = this._orientation; //方向不能相反
+
     //改变蛇头朝向
-    if (type === "left") {
+    if (type === "left" && old !== "right") {
       this.dom.style.transform = "rotate(180deg)";
-    } else if (type === "right") {
+    } else if (type === "right" && old !== "left") {
       this.dom.style.transform = "rotate(0deg)";
-    } else if (type === "top") {
+    } else if (type === "top" && old !== "bottom") {
       this.dom.style.transform = "rotate(270deg)";
-    } else if (type === "bottom") {
+    } else if (type === "bottom" && old !== "top") {
       this.dom.style.transform = "rotate(90deg)";
     }
+    this.orientation = type;
+  }
+
+  /**
+   * 蛇吃到了食物，蛇的长度变长了
+   */
+  grow() {
+    const snakeEndBodyCls = this.snakeBodyArr[this.snakeBodyArr.length - 1]; //蛇的最后一节身体
+    const orientation = snakeEndBodyCls._orientation; //蛇尾的移动方向
+    let snakeBody = null;
+    if (orientation === "left") {
+      //在蛇尾右边生成新的一节身体
+      snakeBody = new SnakeBody(
+        snakeEndBodyCls.left + snakeEndBodyCls.width,
+        snakeEndBodyCls.top
+      );
+    } else if (orientation === "right") {
+      //在蛇尾左边生成新的一节身体
+      snakeBody = new SnakeBody(
+        snakeEndBodyCls.left - snakeEndBodyCls.width,
+        snakeEndBodyCls.top
+      );
+    } else if (orientation === "top") {
+      //在蛇尾下边生成新的一节身体
+      snakeBody = new SnakeBody(
+        snakeEndBodyCls.left,
+        snakeEndBodyCls.top + snakeEndBodyCls.width
+      );
+    } else if (orientation === "bottom") {
+      //在蛇尾上边生成新的一节身体
+      snakeBody = new SnakeBody(
+        snakeEndBodyCls.left,
+        snakeEndBodyCls.top - snakeEndBodyCls.width
+      );
+    }
+    snakeBody.orientations = {
+      type: orientation,
+      index: this.snakeBodyArr.length,
+      snakeBodyArr: this.snakeBodyArr,
+    };
+    this.snakeBodyArr.push(snakeBody);
+    snakeContainer.appendChild(snakeBody.dom);
   }
 }
 
-function comeAboutHandle(times, dom, oldType, nowType, snakeBodyArr, index) {}
+/**
+ * 根据当前蛇类的位置来确定下一个蛇类以合适的时间转变移动方向
+ * @param {*} times 计时器id变量
+ * @param {*} dom 当前蛇类的dom元素
+ * @param {*} oldType 原来的移动方向
+ * @param {*} nowType 当前移动方向
+ * @param {*} snakeBodyArr 储存蛇身体类的数组
+ * @param {*} index 数组下标
+ * @returns {Object} {  type:nowType,
+ *  index:下一个数组下标,
+ * snakeBodyArr:snakeBodyArr
+ * }
+ */
+function comeAboutHandle(times, dom, oldType, nowType, snakeBodyArr, index) {
+  if (times) return;
+  const left = +dom.style.left.replace("px", "");
+  const top = +dom.style.top.replace("px", "");
+  const snakeBody = snakeBodyArr[index];
+  if (!snakeBody) return; //一开始数组内还未有数据
+  times = setInterval(() => {
+    const nowLeft = +snakeBody.dom.style.left.replace("px", "");
+    const nowTop = +snakeBody.dom.style.top.replace("px", "");
+    if (
+      (oldType === "right" && nowLeft >= left) ||
+      (oldType === "left" && nowLeft <= left) ||
+      (oldType === "top" && nowTop <= top) ||
+      (oldType === "bottom" && nowTop >= top)
+    ) {
+      //改变蛇身朝向
+      snakeBody.orientations = {
+        type: nowType,
+        index: index + 1,
+        snakeBodyArr,
+      };
+      clearInterval(times);
+      return;
+    }
+  }, 20);
+}
 
-const snake = new Snake("../img/snake.png", 70, 0);
-snake.move(10);
-snake.comeAbout("bottom");
-// setInterval(() => {
-//   snake.move(10);
-// }, 100);
+export default Snake;
